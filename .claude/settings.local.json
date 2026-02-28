@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(./gradlew bootRun)",
+      "Bash(npm run dev)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 36968 /F)",
+      "Bash(cmd /c \"taskkill /PID 36968 /F\")",
+      "Bash(cmd /c \"taskkill /F /PID 36968 2>&1\")",
+      "Bash(cmd /c \"taskkill /F /PID 36968\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(cmd /c \"wmic process where ProcessId=36968 delete\")",
+      "Bash(powershell -Command \"Stop-Process -Id 36968 -Force\")"
+    ]
+  }
+}

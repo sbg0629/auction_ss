@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
-    { id: 1, text: '안녕하세요? 옥경매를 방문해 주셔서 감사합니다. 문의사항이 있으시다면 알려주세요. 빠르게 회신 드리겠습니다.', isUser: false, time: new Date() }
+    { id: 1, text: '안녕하세요? 옛옥션을 방문해 주셔서 감사합니다. 문의사항이 있으시다면 알려주세요. 빠르게 회신 드리겠습니다.', isUser: false, time: new Date() }
   ])
   const [inputText, setInputText] = useState('')
   const messagesEndRef = useRef(null)
@@ -94,7 +94,7 @@ const ChatWidget = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2196F3', fontWeight: 'bold' }}>OA</div>
                 <div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>옥경매 고객센터</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>옛옥션 고객센터</h3>
                     <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>Online</span>
                 </div>
             </div>
@@ -145,7 +145,7 @@ const ChatWidget = () => {
             <div style={{ margin: '20px 0', padding: '15px', background: 'white', borderRadius: '8px', fontSize: '0.85rem', color: '#555', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
                 <p style={{ margin: '0 0 5px 0' }}>고객센터 영업시간:</p>
                 <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>10:00am ~ 18:00pm</p>
-                <p style={{ margin: 0 }}>연락처: 031-798-7787</p>
+                <p style={{ margin: 0 }}>연락처: 1588-4033</p>
             </div>
 
             <div ref={messagesEndRef} />

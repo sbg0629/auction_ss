@@ -72,4 +72,12 @@ public class Auction extends BaseTimeEntity {
     public void setPaid(boolean paid) {
         this.paid = paid;
     }
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean tradeCompleted = false;
+
+    public void setTradeCompleted(boolean tradeCompleted) {
+        this.tradeCompleted = tradeCompleted;
+    }
 }

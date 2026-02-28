@@ -18,6 +18,7 @@ function AuctionDetail() {
   const [loading, setLoading] = useState(true)
   const [showBidModal, setShowBidModal] = useState(false)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [viewerCount, setViewerCount] = useState(Math.floor(Math.random() * 20) + 5) // Initial random viewers
 
   useEffect(() => {
@@ -153,7 +154,7 @@ function AuctionDetail() {
   const getImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:8081${url}`;
+    return url;
   }
 
   const handleBidClick = () => {
@@ -182,23 +183,37 @@ function AuctionDetail() {
       <button onClick={() => navigate(-1)} style={{ marginBottom: '20px', background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>&larr; 목록으로 돌아가기</button>
       
       <div className="auction-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
-        <div className="detail-image" style={{ 
-          height: '400px', 
-          backgroundColor: '#efebe9', 
-          borderRadius: '8px', 
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          {auction.imageUrl ? (
-            <img 
-              src={getImageUrl(auction.imageUrl)} 
-              alt={auction.itemTitle} 
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-            />
-          ) : (
-            <span style={{ fontSize: '5rem' }}>🏺</span>
+        <div>
+          {/* 메인 이미지 */}
+          <div className="detail-image" style={{
+            height: '400px', backgroundColor: '#efebe9', borderRadius: '8px',
+            overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {auction.imageUrls && auction.imageUrls.length > 0 ? (
+              <img src={auction.imageUrls[activeImageIndex]} alt={auction.itemTitle}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : auction.imageUrl ? (
+              <img src={getImageUrl(auction.imageUrl)} alt={auction.itemTitle}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : (
+              <span style={{ fontSize: '5rem' }}>🏺</span>
+            )}
+          </div>
+
+          {/* 썸네일 */}
+          {auction.imageUrls && auction.imageUrls.length > 1 && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+              {auction.imageUrls.map((url, index) => (
+                <img key={index} src={url} alt={`이미지 ${index + 1}`}
+                  onClick={() => setActiveImageIndex(index)}
+                  style={{
+                    width: '70px', height: '70px', objectFit: 'cover', borderRadius: '4px',
+                    cursor: 'pointer',
+                    border: activeImageIndex === index ? '2px solid var(--primary-color)' : '2px solid #ddd',
+                    opacity: activeImageIndex === index ? 1 : 0.7
+                  }} />
+              ))}
+            </div>
           )}
         </div>
 
@@ -238,6 +253,26 @@ function AuctionDetail() {
             >
               {isFavorite ? '♥' : '♡'}
             </button>
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      toast('로그인이 필요한 서비스입니다.')
+                      navigate('/login')
+                      return
+                    }
+                    const reason = window.prompt('신고 사유를 입력해 주세요.')
+                    if (!reason) return
+                    try {
+                      await axios.post('/api/reports', { auctionId: id, reason })
+                      toast.success('신고가 접수되었습니다.')
+                    } catch (e) {
+                      toast.error('신고 접수에 실패했습니다.')
+                    }
+                  }}
+                  style={{ background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', fontSize: '0.85rem', color: '#666' }}
+                >
+                  신고
+                </button>
             </div>
           </div>
           

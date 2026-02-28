@@ -8,7 +8,7 @@ function Footer() {
         
         {/* 회사 정보 */}
         <div className="footer-section">
-          <h3>Ok Auction</h3>
+          <h3>옛옥션</h3>
           <p>
             한국의 아름다운 도자기를<br/>
             전 세계에 알리고 거래하는<br/>
@@ -41,8 +41,8 @@ function Footer() {
         <div className="footer-section">
           <h4>Contact Us</h4>
           <p>
-            <strong>전화:</strong> 031-798-7787<br/>
-            <strong>이메일:</strong> help@okauction.com<br/>
+            <strong>전화:</strong> 1588-4033<br/>
+            <strong>이메일:</strong> mailltd@naver.com<br/>
             <strong>운영시간:</strong> 평일 10:00 - 18:00<br/>
             (점심시간 12:00 - 13:00)
           </p>
@@ -51,9 +51,9 @@ function Footer() {
 
       <div className="footer-bottom">
         <div className="container">
-            <p>상호명: 옥경매 | 대표자: 홍길동 | 사업자등록번호: 123-45-67890 | 통신판매업신고: 제2026-경기광주-0000호</p>
-            <p>주소: 경기도 광주시 곤지암읍 경충대로 727</p>
-            <p style={{ marginTop: '10px' }}>Copyright &copy; 2026 Ok Auction. All rights reserved.</p>
+            <p>상호명: 옛옥션 | 대표자: 황화영 | 사업자등록번호: 608-14-93751</p>
+            <p>주소: 경남 김해시 가야로439 롯데캐슬가야1단지 상가 1층</p>
+            <p style={{ marginTop: '10px' }}>Copyright &copy; 2026 옛옥션. All rights reserved.</p>
         </div>
       </div>
     </footer>

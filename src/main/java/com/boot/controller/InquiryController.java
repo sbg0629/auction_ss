@@ -26,6 +26,9 @@ public class InquiryController {
     // User: Create Inquiry
     @PostMapping("/inquiries")
     public ResponseEntity<?> createInquiry(@RequestBody InquiryRequest request, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         User author = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -42,6 +45,9 @@ public class InquiryController {
     // User: Get My Inquiries
     @GetMapping("/inquiries/my")
     public ResponseEntity<List<InquiryDto>> getMyInquiries(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         User author = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 

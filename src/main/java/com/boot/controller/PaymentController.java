@@ -19,7 +19,22 @@ public class PaymentController {
     public ResponseEntity<Void> processPayment(
             @RequestBody PaymentRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         paymentService.processPayment(request, userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/confirm/{auctionId}")
+    public ResponseEntity<?> confirmTrade(
+            @PathVariable Long auctionId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        paymentService.confirmTrade(auctionId, userDetails.getUsername());
         return ResponseEntity.ok().build();
     }
 }

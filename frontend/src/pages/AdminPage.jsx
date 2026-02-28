@@ -29,6 +29,7 @@ function AdminPage() {
   const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
   const [selectedPaymentId, setSelectedPaymentId] = useState(null)
   const [deliveryForm, setDeliveryForm] = useState({ courierName: 'CJ대한통운', trackingNumber: '' })
+  const [reports, setReports] = useState([])
 
   useEffect(() => {
     if (activeTab === 'dashboard') {
@@ -41,6 +42,8 @@ function AdminPage() {
         fetchPayments()
     } else if (activeTab === 'auctions') {
         fetchAuctions()
+    } else if (activeTab === 'reports') {
+        fetchReports()
     }
   }, [activeTab])
 
@@ -60,6 +63,18 @@ function AdminPage() {
       fetchPayments()
     } catch (error) {
       alert('등록 실패')
+    }
+  }
+
+  const fetchReports = async () => {
+    try {
+      const response = await axios.get('/api/admin/reports', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+      setReports(response.data)
+    } catch (error) {
+      console.error('Failed to fetch reports', error)
+      alert('신고 목록을 불러오는데 실패했습니다.')
     }
   }
   const fetchDashboard = async () => {
@@ -322,6 +337,13 @@ function AdminPage() {
         >
             FAQ 등록
         </button>
+        <button
+            className="btn"
+            style={{ background: activeTab === 'reports' ? 'var(--primary-color)' : '#ddd', color: activeTab === 'reports' ? 'white' : '#333' }}
+            onClick={() => setActiveTab('reports')}
+        >
+            신고 관리
+        </button>
       </div>
 
       {activeTab === 'dashboard' && dashboard && (
@@ -384,6 +406,69 @@ function AdminPage() {
                         ))}
                     </tbody>
                 </table>
+            </div>
+          </>
+      )}
+
+      {activeTab === 'reports' && (
+          <>
+            <h3 style={{ marginBottom: '15px' }}>신고 목록</h3>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                <thead>
+                  <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '12px' }}>ID</th>
+                    <th style={{ padding: '12px' }}>경매 ID</th>
+                    <th style={{ padding: '12px' }}>경매 제목</th>
+                    <th style={{ padding: '12px' }}>신고자</th>
+                    <th style={{ padding: '12px' }}>사유</th>
+                    <th style={{ padding: '12px' }}>상태</th>
+                    <th style={{ padding: '12px' }}>관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((report) => (
+                    <tr key={report.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '12px' }}>{report.id}</td>
+                      <td style={{ padding: '12px' }}>{report.auctionId}</td>
+                      <td style={{ padding: '12px' }}>{report.auctionTitle}</td>
+                      <td style={{ padding: '12px' }}>{report.reporterEmail}</td>
+                      <td style={{ padding: '12px', maxWidth: '300px', whiteSpace: 'pre-wrap' }}>{report.reason}</td>
+                      <td style={{ padding: '12px' }}>
+                        <span style={{ 
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          color: 'white',
+                          background: report.status === 'OPEN' ? '#ff9800' : '#4CAF50'
+                        }}>
+                          {report.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        {report.status === 'OPEN' && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await axios.post(`/api/admin/reports/${report.id}/resolve`, {}, {
+                                  headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                                })
+                                alert('신고가 처리되었습니다.')
+                                fetchReports()
+                              } catch (e) {
+                                alert('처리에 실패했습니다.')
+                              }
+                            }}
+                            style={{ padding: '5px 10px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            처리 완료
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
       )}

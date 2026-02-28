@@ -111,7 +111,7 @@ function Profile() {
   const getImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:8081${url}`;
+    return url;
   }
 
   if (!user) return <div className="container">로그인이 필요합니다.</div>
@@ -294,9 +294,28 @@ function Profile() {
                         
                         {auction.paid ? (
                             <div style={{ marginTop: '15px' }}>
-                                <button className="btn" style={{ width: '100%', background: '#4CAF50', cursor: 'default', marginBottom: '10px' }} disabled>
-                                    결제 완료
-                                </button>
+                                {auction.tradeCompleted ? (
+                                  <button className="btn" style={{ width: '100%', background: '#4CAF50', cursor: 'default', marginBottom: '10px' }} disabled>
+                                      거래 완료
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="btn"
+                                    style={{ width: '100%', background: '#4CAF50', marginBottom: '10px' }}
+                                    onClick={async () => {
+                                      if (!window.confirm('이 거래를 완료 처리하시겠습니까?')) return
+                                      try {
+                                        await axios.post(`/api/payments/confirm/${auction.id}`)
+                                        alert('거래가 완료 처리되었습니다.')
+                                        fetchWonAuctions()
+                                      } catch (e) {
+                                        alert('거래 완료 처리에 실패했습니다.')
+                                      }
+                                    }}
+                                  >
+                                      거래 완료
+                                  </button>
+                                )}
                                 {deliveryInfo[auction.id] ? (
                                     <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '4px', fontSize: '0.9rem' }}>
                                         <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', color: '#333' }}>🚚 배송 중</p>

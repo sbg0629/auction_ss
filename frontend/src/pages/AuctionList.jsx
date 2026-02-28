@@ -19,30 +19,30 @@ function AuctionList() {
   const keyword = searchParams.get('keyword')
 
   const [statusFilter, setStatusFilter] = useState('RUNNING')
+  const [categoryFilter, setCategoryFilter] = useState('')
+
+  const CATEGORIES = ['도자기', '회화', '조각', '공예', '고가구', '서예', '사진', '기타']
 
   useEffect(() => {
     setPage(0)
-  }, [keyword, statusFilter])
+  }, [keyword, statusFilter, categoryFilter])
 
   useEffect(() => {
-    fetchAuctions(page, statusFilter, keyword)
-  }, [page, statusFilter, keyword])
+    fetchAuctions(page, statusFilter, keyword, categoryFilter)
+  }, [page, statusFilter, keyword, categoryFilter])
 
   const getImageUrl = (url) => {
       if (!url) return null;
       if (url.startsWith('http')) return url;
-      return `http://localhost:8081${url}`;
+      return url;
   }
 
-  const fetchAuctions = async (pageNumber, status, searchKeyword) => {
+  const fetchAuctions = async (pageNumber, status, searchKeyword, category) => {
     try {
       let url = `/api/auctions?page=${pageNumber}&size=${pageSize}&sort=id,desc`
-      if (status) {
-        url += `&status=${status}`
-      }
-      if (searchKeyword) {
-        url += `&keyword=${encodeURIComponent(searchKeyword)}`
-      }
+      if (status) url += `&status=${status}`
+      if (searchKeyword) url += `&keyword=${encodeURIComponent(searchKeyword)}`
+      if (category) url += `&category=${encodeURIComponent(category)}`
       const response = await axios.get(url)
       setAuctions(response.data.content)
       setTotalPages(response.data.totalPages)
@@ -68,39 +68,42 @@ function AuctionList() {
     <div className="container" style={{ marginTop: '30px' }}>
       <h2 style={{ marginBottom: '20px', color: 'var(--primary-color)' }}>경매 목록</h2>
       
-      <div style={{ marginBottom: '30px', borderBottom: '1px solid #ddd' }}>
-        <button 
-            onClick={() => { setStatusFilter('RUNNING'); setPage(0); }}
-            style={{ 
-                padding: '15px 30px', 
-                background: 'none', 
-                border: 'none', 
-                borderBottom: statusFilter === 'RUNNING' ? '3px solid var(--primary-color)' : '3px solid transparent',
-                fontWeight: statusFilter === 'RUNNING' ? 'bold' : 'normal',
-                color: statusFilter === 'RUNNING' ? 'var(--primary-color)' : '#666',
-                cursor: 'pointer',
-                fontSize: '1.1rem',
-                transition: 'all 0.3s'
-            }}
-        >
-            진행중인 경매
+      {/* 상태 탭 */}
+      <div style={{ marginBottom: '20px', borderBottom: '1px solid #ddd' }}>
+        <button onClick={() => { setStatusFilter('RUNNING'); setPage(0); }}
+          style={{ padding: '15px 30px', background: 'none', border: 'none',
+            borderBottom: statusFilter === 'RUNNING' ? '3px solid var(--primary-color)' : '3px solid transparent',
+            fontWeight: statusFilter === 'RUNNING' ? 'bold' : 'normal',
+            color: statusFilter === 'RUNNING' ? 'var(--primary-color)' : '#666',
+            cursor: 'pointer', fontSize: '1.1rem', transition: 'all 0.3s' }}>
+          진행중인 경매
         </button>
-        <button 
-            onClick={() => { setStatusFilter('ENDED'); setPage(0); }}
-            style={{ 
-                padding: '15px 30px', 
-                background: 'none', 
-                border: 'none', 
-                borderBottom: statusFilter === 'ENDED' ? '3px solid var(--primary-color)' : '3px solid transparent',
-                fontWeight: statusFilter === 'ENDED' ? 'bold' : 'normal',
-                color: statusFilter === 'ENDED' ? 'var(--primary-color)' : '#666',
-                cursor: 'pointer',
-                fontSize: '1.1rem',
-                transition: 'all 0.3s'
-            }}
-        >
-            종료된 경매
+        <button onClick={() => { setStatusFilter('ENDED'); setPage(0); }}
+          style={{ padding: '15px 30px', background: 'none', border: 'none',
+            borderBottom: statusFilter === 'ENDED' ? '3px solid var(--primary-color)' : '3px solid transparent',
+            fontWeight: statusFilter === 'ENDED' ? 'bold' : 'normal',
+            color: statusFilter === 'ENDED' ? 'var(--primary-color)' : '#666',
+            cursor: 'pointer', fontSize: '1.1rem', transition: 'all 0.3s' }}>
+          종료된 경매
         </button>
+      </div>
+
+      {/* 카테고리 필터 */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '25px' }}>
+        <button onClick={() => { setCategoryFilter(''); setPage(0); }}
+          style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid #ddd', cursor: 'pointer',
+            background: categoryFilter === '' ? 'var(--primary-color)' : 'white',
+            color: categoryFilter === '' ? 'white' : '#333', fontSize: '0.85rem' }}>
+          전체
+        </button>
+        {CATEGORIES.map(cat => (
+          <button key={cat} onClick={() => { setCategoryFilter(cat); setPage(0); }}
+            style={{ padding: '6px 14px', borderRadius: '20px', border: '1px solid #ddd', cursor: 'pointer',
+              background: categoryFilter === cat ? 'var(--primary-color)' : 'white',
+              color: categoryFilter === cat ? 'white' : '#333', fontSize: '0.85rem' }}>
+            {cat}
+          </button>
+        ))}
       </div>
 
       <div className="grid">
@@ -185,7 +188,7 @@ function AuctionList() {
           auction={selectedAuction} 
           onClose={() => setSelectedAuction(null)} 
           onBidSuccess={() => {
-            fetchAuctions(page, statusFilter, keyword)
+            fetchAuctions(page, statusFilter, keyword, categoryFilter)
             setSelectedAuction(null)
           }}
         />

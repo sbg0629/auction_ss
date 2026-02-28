@@ -4,17 +4,9 @@ import com.boot.dto.AuctionDto;
 import com.boot.dto.BidDto;
 import com.boot.dto.BidNotification;
 import com.boot.dto.BidRequest;
-import com.boot.entity.Auction;
-import com.boot.entity.Bid;
-import com.boot.entity.Favorite;
-import com.boot.repository.AuctionRepository;
-import com.boot.repository.BidRepository;
-import com.boot.repository.FavoriteRepository;
+import com.boot.entity.*;
+import com.boot.repository.*;
 import com.boot.dto.AuctionCreateRequest;
-import com.boot.entity.Item;
-import com.boot.entity.User;
-import com.boot.repository.ItemRepository;
-import com.boot.repository.UserRepository;
 import com.boot.type.AuctionStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -40,6 +33,7 @@ public class AuctionService {
     private final FileStorageService fileStorageService;
     private final BidRepository bidRepository;
     private final FavoriteRepository favoriteRepository;
+    private final ItemImageRepository itemImageRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
 
@@ -47,29 +41,21 @@ public class AuctionService {
     public boolean toggleFavorite(Long auctionId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
-
         Optional<Favorite> existingFavorite = favoriteRepository.findByUserIdAndAuctionId(user.getId(), auctionId);
-
         if (existingFavorite.isPresent()) {
             favoriteRepository.delete(existingFavorite.get());
-            return false; // Removed from favorites
+            return false;
         } else {
-            Favorite favorite = Favorite.builder()
-                    .user(user)
-                    .auction(auction)
-                    .build();
-            favoriteRepository.save(favorite);
-            return true; // Added to favorites
+            favoriteRepository.save(Favorite.builder().user(user).auction(auction).build());
+            return true;
         }
     }
 
     public List<AuctionDto> getFavoriteAuctions(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         return favoriteRepository.findByUserId(user.getId()).stream()
                 .map(favorite -> convertToDto(favorite.getAuction()))
                 .collect(Collectors.toList());
@@ -78,7 +64,6 @@ public class AuctionService {
     public List<AuctionDto> getWonAuctions(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         return auctionRepository.findByWinnerId(user.getId()).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -95,27 +80,24 @@ public class AuctionService {
         User bidder = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        Auction auction = auctionRepository.findById(auctionId)
+        // 비관적 락으로 동시 입찰 충돌 방지
+        Auction auction = auctionRepository.findByIdWithLock(auctionId)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
 
         if (auction.getStatus() != AuctionStatus.RUNNING) {
             throw new IllegalStateException("Auction is not running");
         }
-
         if (LocalDateTime.now().isAfter(auction.getEndAt())) {
             throw new IllegalStateException("Auction has ended");
         }
 
-        // Check for previous top bidder for notification
         Optional<Bid> topBid = bidRepository.findTopByAuctionOrderByBidAmountDesc(auction);
 
-        // Validate bid amount
         Long minBidAmount = auction.getCurrentPrice() + auction.getMinBidUnit();
         if (request.getAmount() < minBidAmount) {
             throw new IllegalArgumentException("Bid amount must be at least " + minBidAmount);
         }
 
-        // Create Bid
         Bid bid = Bid.builder()
                 .auction(auction)
                 .bidder(bidder)
@@ -123,25 +105,23 @@ public class AuctionService {
                 .build();
         bidRepository.save(bid);
 
-        // Auto-Extension: Extend if bid within last 5 minutes
+        // 마지막 5분 내 입찰 시 5분 자동 연장
         if (auction.getEndAt().minusMinutes(5).isBefore(LocalDateTime.now())) {
-            auction.extendTime(5); // Extend by 5 minutes
+            auction.extendTime(5);
         }
 
-        // Update Auction current price
         auction.updateCurrentPrice(request.getAmount());
 
-        // Notify previous bidder
+        // 이전 최고 입찰자에게 알림
         if (topBid.isPresent()) {
             User previousBidder = topBid.get().getBidder();
             if (!previousBidder.getId().equals(bidder.getId())) {
-                notificationService.sendNotification(previousBidder, 
-                    "입찰하신 '" + auction.getItem().getTitle() + "' 경매에서 상위 입찰자가 발생했습니다.", 
-                    auction.getId());
+                notificationService.sendNotification(previousBidder,
+                        "입찰하신 '" + auction.getItem().getTitle() + "' 경매에서 상위 입찰자가 발생했습니다.",
+                        auction.getId());
             }
         }
 
-        // Broadcast update via WebSocket
         int bidCount = bidRepository.countByAuction(auction);
         BidDto bidDto = BidDto.builder()
                 .id(bid.getId())
@@ -161,28 +141,42 @@ public class AuctionService {
     }
 
     @Transactional
-    public AuctionDto createAuction(AuctionCreateRequest request, MultipartFile image, String userEmail) {
+    public AuctionDto createAuction(AuctionCreateRequest request, List<MultipartFile> images, String userEmail) {
         User seller = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String imageUrl = null;
-        if (image != null && !image.isEmpty()) {
-            imageUrl = fileStorageService.store(image);
+        // 첫 번째 이미지를 대표 이미지로
+        String firstImageUrl = null;
+        if (images != null && !images.isEmpty()) {
+            firstImageUrl = fileStorageService.store(images.get(0));
         } else if (request.getImageUrl() != null && !request.getImageUrl().isEmpty()) {
-             imageUrl = request.getImageUrl();
+            firstImageUrl = request.getImageUrl();
         }
 
-        // 1. Create Item
         Item item = Item.builder()
                 .seller(seller)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .imageUrl(imageUrl)
-                .category("GENERAL") // Default category
+                .imageUrl(firstImageUrl)
+                .category(request.getCategory() != null ? request.getCategory() : "도자기")
                 .build();
         itemRepository.save(item);
 
-        // 2. Create Auction
+        // 모든 이미지를 ItemImage에 저장
+        if (images != null) {
+            for (int i = 0; i < images.size(); i++) {
+                MultipartFile file = images.get(i);
+                if (file != null && !file.isEmpty()) {
+                    String imageUrl = (i == 0) ? firstImageUrl : fileStorageService.store(file);
+                    itemImageRepository.save(ItemImage.builder()
+                            .item(item)
+                            .imageUrl(imageUrl)
+                            .sortOrder(i)
+                            .build());
+                }
+            }
+        }
+
         LocalDateTime now = LocalDateTime.now();
         Auction auction = Auction.builder()
                 .item(item)
@@ -190,7 +184,8 @@ public class AuctionService {
                 .currentPrice(request.getStartPrice())
                 .startAt(now)
                 .endAt(now.plusMinutes(request.getDurationMinutes()))
-                .status(AuctionStatus.RUNNING)
+                // 기본값 READY: 관리자 승인 후 RUNNING 으로 변경
+                .status(AuctionStatus.READY)
                 .minBidUnit(request.getMinBidUnit() != null ? request.getMinBidUnit() : 1000L)
                 .build();
         auctionRepository.save(auction);
@@ -198,36 +193,37 @@ public class AuctionService {
         return convertToDto(auction);
     }
 
-    public Page<AuctionDto> getAllAuctions(AuctionStatus status, String keyword, Pageable pageable) {
+    public Page<AuctionDto> getAllAuctions(AuctionStatus status, String keyword, String category, Pageable pageable) {
+        boolean hasKeyword = keyword != null && !keyword.isEmpty();
+        boolean hasCategory = category != null && !category.isEmpty();
+
         Page<Auction> auctions;
-        if (keyword != null && !keyword.isEmpty()) {
-            if (status != null) {
-                auctions = auctionRepository.findByStatusAndItem_TitleContaining(status, keyword, pageable);
-            } else {
-                auctions = auctionRepository.findByItem_TitleContaining(keyword, pageable);
-            }
+        if (status != null && hasKeyword && hasCategory) {
+            auctions = auctionRepository.findByStatusAndItem_TitleContainingAndItem_Category(status, keyword, category, pageable);
+        } else if (status != null && hasKeyword) {
+            auctions = auctionRepository.findByStatusAndItem_TitleContaining(status, keyword, pageable);
+        } else if (status != null && hasCategory) {
+            auctions = auctionRepository.findByStatusAndItem_Category(status, category, pageable);
+        } else if (hasKeyword && hasCategory) {
+            auctions = auctionRepository.findByItem_TitleContainingAndItem_Category(keyword, category, pageable);
+        } else if (status != null) {
+            auctions = auctionRepository.findByStatus(status, pageable);
+        } else if (hasKeyword) {
+            auctions = auctionRepository.findByItem_TitleContaining(keyword, pageable);
+        } else if (hasCategory) {
+            auctions = auctionRepository.findByItem_Category(category, pageable);
         } else {
-            if (status != null) {
-                auctions = auctionRepository.findByStatus(status, pageable);
-            } else {
-                auctions = auctionRepository.findAll(pageable);
-            }
+            auctions = auctionRepository.findAll(pageable);
         }
-        
+
         return auctions.map(this::convertToDto);
     }
 
     public List<AuctionDto> getAllAuctions(AuctionStatus status) {
-        List<Auction> auctions;
-        if (status != null) {
-            auctions = auctionRepository.findByStatus(status);
-        } else {
-            auctions = auctionRepository.findAll();
-        }
-        
-        return auctions.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        List<Auction> auctions = status != null
+                ? auctionRepository.findByStatus(status)
+                : auctionRepository.findAll();
+        return auctions.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
     public AuctionDto getAuction(Long id) {
@@ -248,27 +244,29 @@ public class AuctionService {
     }
 
     private String maskName(String name) {
-        if (name == null || name.isEmpty()) {
-            return "***";
-        }
-        if (name.length() == 1) {
-            return "*";
-        }
+        if (name == null || name.isEmpty()) return "***";
+        if (name.length() == 1) return "*";
         StringBuilder masked = new StringBuilder(name.substring(0, 1));
-        for (int i = 1; i < name.length(); i++) {
-            masked.append("*");
-        }
+        for (int i = 1; i < name.length(); i++) masked.append("*");
         return masked.toString();
     }
 
     private AuctionDto convertToDto(Auction auction) {
         int bidCount = bidRepository.countByAuction(auction);
+        List<String> imageUrls = itemImageRepository
+                .findByItemIdOrderBySortOrderAsc(auction.getItem().getId())
+                .stream()
+                .map(ItemImage::getImageUrl)
+                .collect(Collectors.toList());
+
         return AuctionDto.builder()
                 .id(auction.getId())
                 .itemId(auction.getItem().getId())
                 .itemTitle(auction.getItem().getTitle())
                 .description(auction.getItem().getDescription())
                 .imageUrl(auction.getItem().getImageUrl())
+                .imageUrls(imageUrls)
+                .category(auction.getItem().getCategory())
                 .startPrice(auction.getStartPrice())
                 .currentPrice(auction.getCurrentPrice())
                 .minBidUnit(auction.getMinBidUnit())
@@ -279,6 +277,7 @@ public class AuctionService {
                 .bidCount(bidCount)
                 .winnerName(auction.getWinner() != null ? auction.getWinner().getName() : null)
                 .paid(auction.isPaid())
+                .tradeCompleted(auction.isTradeCompleted())
                 .build();
     }
 }

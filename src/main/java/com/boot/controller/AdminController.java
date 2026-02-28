@@ -88,13 +88,19 @@ public class AdminController {
     }
 
     @PostMapping("/payments/{id}/delivery")
-    public ResponseEntity<?> registerDelivery(@PathVariable Long id, @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> registerDelivery(@PathVariable Long id, @RequestBody Map<String, String> request, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         deliveryService.registerTracking(id, request.get("courierName"), request.get("trackingNumber"));
         return ResponseEntity.ok("Delivery registered successfully");
     }
 
     @PostMapping("/auctions/{id}/cancel")
-    public ResponseEntity<?> cancelAuction(@PathVariable Long id) {
+    public ResponseEntity<?> cancelAuction(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         Auction auction = auctionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
         auction.updateStatus(AuctionStatus.CANCELED);
@@ -102,8 +108,23 @@ public class AdminController {
         return ResponseEntity.ok("Auction canceled successfully");
     }
 
+    @PostMapping("/auctions/{id}/approve")
+    public ResponseEntity<?> approveAuction(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        Auction auction = auctionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
+        auction.updateStatus(AuctionStatus.RUNNING);
+        auctionRepository.save(auction);
+        return ResponseEntity.ok("Auction approved successfully");
+    }
+
     @PostMapping("/auctions/{id}/delete")
-    public ResponseEntity<?> deleteAuction(@PathVariable Long id) {
+    public ResponseEntity<?> deleteAuction(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         auctionRepository.deleteById(id);
         return ResponseEntity.ok("Auction deleted successfully");
     }
@@ -124,7 +145,10 @@ public class AdminController {
     }
 
     @PostMapping("/users/{email}/ban")
-    public ResponseEntity<?> banUser(@PathVariable String email, @RequestBody BanRequest request) {
+    public ResponseEntity<?> banUser(@PathVariable String email, @RequestBody BanRequest request, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         
@@ -142,7 +166,10 @@ public class AdminController {
     }
 
     @PostMapping("/users/{email}/unban")
-    public ResponseEntity<?> unbanUser(@PathVariable String email) {
+    public ResponseEntity<?> unbanUser(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         user.unban();
@@ -151,7 +178,10 @@ public class AdminController {
     }
 
     @PostMapping("/users/{email}/delete")
-    public ResponseEntity<?> deleteUser(@PathVariable String email) {
+    public ResponseEntity<?> deleteUser(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         userRepository.delete(user);

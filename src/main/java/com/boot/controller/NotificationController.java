@@ -22,6 +22,9 @@ public class NotificationController {
 
     @GetMapping
     public ResponseEntity<List<NotificationDto>> getNotifications(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return ResponseEntity.ok(notificationService.getNotifications(user));
@@ -29,6 +32,9 @@ public class NotificationController {
 
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return ResponseEntity.ok(notificationService.getUnreadCount(user));

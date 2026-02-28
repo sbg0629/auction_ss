@@ -40,7 +40,7 @@ const RecentViewed = () => {
             }}>
               {item.imageUrl ? (
                 <img 
-                  src={`http://localhost:8081${item.imageUrl}`} 
+                  src={item.imageUrl}
                   alt={item.title} 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />

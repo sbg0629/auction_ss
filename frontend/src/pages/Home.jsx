@@ -20,7 +20,7 @@ function Home() {
   const getImageUrl = (url) => {
       if (!url) return null;
       if (url.startsWith('http')) return url;
-      return `http://localhost:8081${url}`;
+      return url;
   }
 
   const fetchAuctions = async () => {
@@ -70,7 +70,7 @@ function Home() {
     <div style={{ paddingBottom: '50px' }}>
       <div className="hero">
         <div className="container">
-            <h1>옥경매 온라인 경매</h1>
+            <h1>옛옥션 온라인 경매</h1>
             <p>엄선된 미술품과 도자기를 만나는 특별한 공간</p>
             <div style={{ marginTop: '30px' }}>
                 <Link to="/auctions" className="btn" style={{ background: 'transparent', border: '1px solid #fff', marginRight: '10px' }}>경매 목록 보기</Link>
@@ -164,7 +164,7 @@ function Home() {
       {/* Guide Section */}
       <div style={{ background: '#f8f8f8', padding: '80px 0' }}>
         <div className="container">
-            <h2 style={{ marginBottom: '50px' }}>옥경매 이용안내</h2>
+            <h2 style={{ marginBottom: '50px' }}>옛옥션 이용안내</h2>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '30px' }}>
                 {/* Auction Guide */}
@@ -172,7 +172,7 @@ function Home() {
                     <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🏛️</div>
                     <h3 style={{ fontSize: '1.2rem', marginBottom: '15px' }}>경매안내</h3>
                     <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.9rem' }}>
-                        옥경매에서 준비하는 엄선된 미술품 경매를 소개드립니다.
+                        옛옥션에서 준비하는 엄선된 미술품 경매를 소개드립니다.
                     </p>
                     <Link to="/auctions" style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem' }}>자세히 보기 &rarr;</Link>
                 </div>
@@ -243,7 +243,7 @@ function Home() {
             {/* How to Sell */}
             <div>
                 <h3 style={{ fontSize: '1.8rem', marginBottom: '30px', borderBottom: '2px solid #000', paddingBottom: '15px', display: 'inline-block' }}>How to Sell</h3>
-                <p style={{ color: '#666', marginBottom: '30px' }}>고객님의 소중한 소장품을 기다립니다. 옥경매에 문의하세요.</p>
+                <p style={{ color: '#666', marginBottom: '30px' }}>고객님의 소중한 소장품을 기다립니다. 옛옥션에 문의하세요.</p>
                 
                 <ul style={{ listStyle: 'none', padding: 0 }}>
                     <li style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>

@@ -22,6 +22,49 @@ function Signup() {
   const [verificationCode, setVerificationCode] = useState('')
   const [isVerifying, setIsVerifying] = useState(false)
 
+  // 이메일 인증 상태
+  const [emailCodeSent, setEmailCodeSent] = useState(false)
+  const [emailCode, setEmailCode] = useState('')
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailVerifying, setEmailVerifying] = useState(false)
+
+  const handleSendEmailCode = async () => {
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error('올바른 이메일 주소를 입력해주세요.')
+      return
+    }
+    setEmailSending(true)
+    try {
+      await axios.post('/api/auth/email/send', { email: formData.email })
+      setEmailCodeSent(true)
+      setEmailVerified(false)
+      setEmailCode('')
+      toast.success('인증 코드가 이메일로 발송되었습니다. (5분 내 입력)')
+    } catch (err) {
+      toast.error('이메일 발송 실패: ' + (err.response?.data || '서버 오류'))
+    } finally {
+      setEmailSending(false)
+    }
+  }
+
+  const handleVerifyEmailCode = async () => {
+    if (!emailCode || emailCode.length !== 6) {
+      toast.error('6자리 인증 코드를 입력해주세요.')
+      return
+    }
+    setEmailVerifying(true)
+    try {
+      await axios.post('/api/auth/email/verify', { email: formData.email, code: emailCode })
+      setEmailVerified(true)
+      toast.success('이메일 인증이 완료되었습니다.')
+    } catch (err) {
+      toast.error(err.response?.data || '인증 코드가 일치하지 않습니다.')
+    } finally {
+      setEmailVerifying(false)
+    }
+  }
+
   const handleVerifyIdentity = () => {
     if (!formData.phoneNumber.startsWith('010') || !formData.name) {
       toast.error('올바른 이름과 휴대폰 번호를 입력해주세요.')
@@ -64,6 +107,11 @@ function Signup() {
     setError(null)
     if (formData.password !== formData.confirmPassword) {
       setError('비밀번호가 일치하지 않습니다.')
+      return
+    }
+
+    if (!emailVerified) {
+      setError('이메일 인증을 완료해주세요.')
       return
     }
 
@@ -157,15 +205,49 @@ function Signup() {
 
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>이메일</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
-            required
-            placeholder="example@test.com"
-          />
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={(e) => { handleChange(e); setEmailVerified(false); setEmailCodeSent(false); setEmailCode(''); }}
+              style={{ flex: 1, padding: '10px', borderRadius: '4px', border: `1px solid ${emailVerified ? '#4caf50' : '#ddd'}` }}
+              required
+              placeholder="example@gmail.com"
+              disabled={emailVerified}
+            />
+            <button
+              type="button"
+              onClick={handleSendEmailCode}
+              disabled={emailVerified || emailSending}
+              style={{ padding: '10px 14px', background: emailVerified ? '#4caf50' : '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.85rem' }}
+            >
+              {emailSending ? '발송 중...' : emailCodeSent ? '재발송' : '인증코드 발송'}
+            </button>
+          </div>
+          {emailCodeSent && !emailVerified && (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="text"
+                value={emailCode}
+                onChange={(e) => setEmailCode(e.target.value)}
+                style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
+                placeholder="인증 코드 6자리 입력"
+                maxLength={6}
+              />
+              <button
+                type="button"
+                onClick={handleVerifyEmailCode}
+                disabled={emailVerifying}
+                style={{ padding: '10px 14px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '0.85rem' }}
+              >
+                {emailVerifying ? '확인 중...' : '인증 확인'}
+              </button>
+            </div>
+          )}
+          {emailVerified && (
+            <div style={{ color: '#4caf50', fontSize: '0.9rem', marginTop: '4px' }}>✓ 이메일 인증 완료</div>
+          )}
         </div>
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>주소</label>

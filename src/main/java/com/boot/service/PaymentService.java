@@ -49,4 +49,23 @@ public class PaymentService {
 
         auction.setPaid(true);
     }
+
+    @Transactional
+    public void confirmTrade(Long auctionId, String userEmail) {
+        User buyer = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new IllegalArgumentException("Auction not found"));
+
+        if (auction.getWinner() == null || !auction.getWinner().getId().equals(buyer.getId())) {
+            throw new IllegalArgumentException("Only the winner can confirm this auction");
+        }
+
+        if (!auction.isPaid()) {
+            throw new IllegalStateException("Payment is not completed yet");
+        }
+
+        auction.setTradeCompleted(true);
+    }
 }

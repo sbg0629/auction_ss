@@ -51,6 +51,9 @@ public class AuctionController {
             @PathVariable Long id,
             @RequestBody BidRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         auctionService.placeBid(id, request, userDetails.getUsername());
         return ResponseEntity.ok().build();
     }
@@ -59,6 +62,9 @@ public class AuctionController {
     public ResponseEntity<Boolean> toggleFavorite(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         return ResponseEntity.ok(auctionService.toggleFavorite(id, userDetails.getUsername()));
     }
 
@@ -66,35 +72,48 @@ public class AuctionController {
     public ResponseEntity<Boolean> isFavorite(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         return ResponseEntity.ok(auctionService.isFavorite(id, userDetails.getUsername()));
     }
 
     @GetMapping("/favorites")
     public ResponseEntity<List<AuctionDto>> getFavoriteAuctions(
             @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         return ResponseEntity.ok(auctionService.getFavoriteAuctions(userDetails.getUsername()));
     }
 
     @GetMapping("/won")
     public ResponseEntity<List<AuctionDto>> getWonAuctions(
             @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
         return ResponseEntity.ok(auctionService.getWonAuctions(userDetails.getUsername()));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<AuctionDto> createAuction(
             @RequestPart("request") AuctionCreateRequest request,
-            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(auctionService.createAuction(request, image, userDetails.getUsername()));
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(auctionService.createAuction(request, images, userDetails.getUsername()));
     }
 
     @GetMapping
     public ResponseEntity<Page<AuctionDto>> getAllAuctions(
             @RequestParam(required = false) AuctionStatus status,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
             @PageableDefault(size = 15) Pageable pageable) {
-        return ResponseEntity.ok(auctionService.getAllAuctions(status, keyword, pageable));
+        return ResponseEntity.ok(auctionService.getAllAuctions(status, keyword, category, pageable));
     }
 
     @GetMapping("/{id}")
