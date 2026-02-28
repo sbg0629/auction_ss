@@ -1,0 +1,24 @@
+# Build output
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Frontend (백엔드만 배포)
+frontend/
+node_modules/
+
+# Local uploads
+uploads/
+
+# Misc
+*.log
+.DS_Store
