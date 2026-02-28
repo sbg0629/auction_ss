@@ -19,9 +19,11 @@ function Inquiry() {
         const response = await axios.get('/api/inquiries/my', {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        setInquiries(response.data);
+        const data = response.data;
+        setInquiries(Array.isArray(data) ? data : []);
     } catch (error) {
         console.error('Failed to fetch inquiries', error);
+        setInquiries([]);
     }
   };
 

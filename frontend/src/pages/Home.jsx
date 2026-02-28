@@ -26,9 +26,11 @@ function Home() {
   const fetchAuctions = async () => {
     try {
       const response = await axios.get('/api/auctions?status=RUNNING')
-      setAuctions(response.data.content)
+      const data = response.data?.content ?? response.data
+      setAuctions(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Failed to fetch auctions', error)
+      setAuctions([])
     }
   }
 
@@ -85,7 +87,7 @@ function Home() {
 
         <h2>진행중인 경매</h2>
         
-        {auctions.length === 0 ? (
+        {(auctions ?? []).length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0', color: '#999' }}>
                 <p style={{ fontSize: '1.2rem', marginBottom: '20px' }}>현재 진행중인 경매가 없습니다.</p>
                 <p>다음 경매 일정을 기다려주세요.</p>
@@ -93,7 +95,7 @@ function Home() {
         ) : (
             <div style={{ margin: '0 -15px', marginBottom: '50px' }}>
                 <Slider {...sliderSettings}>
-                    {auctions.map((auction) => (
+                    {(auctions ?? []).map((auction) => (
                         <div key={auction.id} style={{ padding: '0 15px', height: '100%' }}>
                             <div className="card">
                                 <Link to={`/auctions/${auction.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block', position: 'relative' }}>

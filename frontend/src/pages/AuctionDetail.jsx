@@ -117,9 +117,11 @@ function AuctionDetail() {
   const fetchBids = async () => {
     try {
       const response = await axios.get(`/api/auctions/${id}/bids`)
-      setBids(response.data)
+      const data = response.data
+      setBids(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Failed to fetch bids', error)
+      setBids([])
     }
   }
 

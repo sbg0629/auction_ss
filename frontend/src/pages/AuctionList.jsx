@@ -44,10 +44,12 @@ function AuctionList() {
       if (searchKeyword) url += `&keyword=${encodeURIComponent(searchKeyword)}`
       if (category) url += `&category=${encodeURIComponent(category)}`
       const response = await axios.get(url)
-      setAuctions(response.data.content)
-      setTotalPages(response.data.totalPages)
+      const data = response.data?.content ?? response.data
+      setAuctions(Array.isArray(data) ? data : [])
+      setTotalPages(response.data?.totalPages ?? 0)
     } catch (error) {
       console.error('Failed to fetch auctions', error)
+      setAuctions([])
     }
   }
 
@@ -107,11 +109,11 @@ function AuctionList() {
       </div>
 
       <div className="grid">
-        {auctions.length === 0 ? (
+        {(auctions ?? []).length === 0 ? (
           <p style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>등록된 경매가 없습니다.</p>
         ) : (
           <>
-            {auctions.map((auction) => (
+            {(auctions ?? []).map((auction) => (
               <div key={auction.id} className="card">
                 <Link to={`/auctions/${auction.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                   <div className="card-image" style={{ 

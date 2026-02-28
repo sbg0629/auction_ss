@@ -14,17 +14,20 @@ function AdminRevenuePage() {
     const fetchRevenue = async () => {
         try {
             const response = await axios.get('/api/admin/revenue');
-            setRevenues(response.data);
+            const data = response.data;
+            setRevenues(Array.isArray(data) ? data : []);
             setLoading(false);
         } catch (error) {
             console.error('Failed to fetch revenue', error);
             toast.error('수익 정보를 불러오는데 실패했습니다.');
+            setRevenues([]);
             setLoading(false);
         }
     };
 
-    const totalRevenue = revenues.reduce((sum, item) => sum + item.feeAmount, 0);
-    const totalSales = revenues.reduce((sum, item) => sum + item.totalAmount, 0);
+    const safeRevenues = Array.isArray(revenues) ? revenues : [];
+    const totalRevenue = safeRevenues.reduce((sum, item) => sum + (item?.feeAmount ?? 0), 0);
+    const totalSales = safeRevenues.reduce((sum, item) => sum + (item?.totalAmount ?? 0), 0);
 
     if (loading) return <div className="container" style={{ padding: '50px', textAlign: 'center' }}>Loading...</div>;
 
@@ -64,7 +67,7 @@ function AdminRevenuePage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {revenues.map((item) => (
+                            {safeRevenues.map((item) => (
                                 <tr key={item.paymentId} style={{ borderBottom: '1px solid #eee' }}>
                                     <td style={{ padding: '12px' }}>{new Date(item.paymentDate).toLocaleDateString()}</td>
                                     <td style={{ padding: '12px' }}>{item.itemTitle}</td>
@@ -83,7 +86,7 @@ function AdminRevenuePage() {
                                     </td>
                                 </tr>
                             ))}
-                            {revenues.length === 0 && (
+                            {safeRevenues.length === 0 && (
                                 <tr>
                                     <td colSpan="8" style={{ padding: '30px', textAlign: 'center', color: '#888' }}>
                                         수익 내역이 없습니다.

@@ -4,7 +4,8 @@ const RecentViewed = () => {
   const getRecentItems = () => {
     try {
       const items = localStorage.getItem('recentViewed');
-      return items ? JSON.parse(items) : [];
+      const parsed = items ? JSON.parse(items) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }
@@ -12,7 +13,7 @@ const RecentViewed = () => {
 
   const recentItems = getRecentItems();
 
-  if (recentItems.length === 0) return null;
+  if (!recentItems?.length) return null;
 
   return (
     <div style={{ marginTop: '50px', marginBottom: '30px' }}>

@@ -42,10 +42,12 @@ function Profile() {
   const fetchFavorites = async () => {
     try {
       const response = await axios.get('/api/auctions/favorites')
-      setFavorites(response.data)
+      const data = response.data
+      setFavorites(Array.isArray(data) ? data : [])
       setLoading(false)
     } catch (error) {
       console.error('Failed to fetch favorites', error)
+      setFavorites([])
       setLoading(false)
     }
   }
@@ -53,7 +55,7 @@ function Profile() {
   const fetchWonAuctions = async () => {
     try {
       const response = await axios.get('/api/auctions/won')
-      const won = response.data
+      const won = Array.isArray(response.data) ? response.data : []
       setWonAuctions(won)
       
       // Fetch delivery info for paid auctions
@@ -69,6 +71,7 @@ function Profile() {
       })
     } catch (error) {
       console.error('Failed to fetch won auctions', error)
+      setWonAuctions([])
     }
   }
 

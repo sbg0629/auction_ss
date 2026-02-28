@@ -66,9 +66,11 @@ const NotificationBell = () => {
   const fetchNotifications = async () => {
     try {
       const response = await axios.get('/api/notifications')
-      setNotifications(response.data)
+      const data = response.data
+      setNotifications(Array.isArray(data) ? data : [])
     } catch (error) {
         console.error('Failed to fetch notifications', error)
+        setNotifications([])
     }
   }
 
